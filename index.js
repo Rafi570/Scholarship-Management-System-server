@@ -26,9 +26,9 @@ async function run() {
     await client.connect();
     console.log("Connected to MongoDB!");
 
-    // Example route using MongoDB
     const db = client.db("Scholarship-Management-System");
     const userCollection = db.collection("user");
+    const universityCollection = db.collection("university");
 
     // user related Api
     app.post("/users", async (req, res) => {
@@ -46,8 +46,47 @@ async function run() {
       res.send(result);
     });
 
+    // university related Api
+    // GET: All Scholarships with simple filters (তোমার স্টাইলে)
+    app.get("/scholarshipUniversity", async (req, res) => {
+      let query = {};
 
+      const {
+        email,
+        universityName,
+        universityCountry,
+        universityWorldRank,
+        subjectCategory,
+        scholarshipCategory,
+        degree,
+        search,
+      } = req.query;
 
+      if (email) query.postedUserEmail = email;
+      if (universityName) query.universityName = universityName;
+      if (universityCountry) query.universityCountry = universityCountry;
+      if (subjectCategory) query.subjectCategory = subjectCategory;
+      if (scholarshipCategory) query.scholarshipCategory = scholarshipCategory;
+      if (degree) query.degree = degree;
+
+      if (universityWorldRank) {
+        query.universityWorldRank = { $lte: Number(universityWorldRank) };
+      }
+
+      if (search) {
+        query.$or = [
+          { scholarshipName: { $regex: search, $options: "i" } },
+          { universityName: { $regex: search, $options: "i" } },
+        ];
+      }
+
+      const result = await universityCollection
+        .find(query)
+        .sort({ scholarshipPostDate: -1 })
+        .toArray();
+
+      res.send(result); // এখন আর এরর আসবে না
+    });
   } catch (err) {
     console.error(err);
   }
